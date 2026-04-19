@@ -7,7 +7,12 @@ license = "Apache-2.0"
 repository = "https://github.com/kabirajpan/zentype"
 readme = "README.md"
 keywords = ["text", "rendering", "wgpu", "gpu", "typography"]
-categories = ["rendering", "graphics"]
+categories = ["rendering::graphics-api", "graphics"]
+exclude = [
+    "target/",
+    "ROADMAP.md",
+    ".gitignore",
+]
 
 [dependencies]
 anyhow = "1.0.102"
