@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use anyhow::Result;
-use zentype::prelude::*;
+// use zentype::prelude::*;
 use zentype::primitives::{GlyphAtlas, ZentypePipeline as TextPipeline};
 use zentype::types::glyph::GlyphInstance;
 use cosmic_text::{Attrs, FontSystem, Metrics, SwashCache, Buffer, Color};

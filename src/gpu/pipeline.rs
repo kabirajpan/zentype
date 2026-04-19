@@ -3,9 +3,7 @@ use crate::types::glyph::GlyphInstance;
 pub struct TextPipeline {
     pub pipeline: wgpu::RenderPipeline,
     pub atlas_bind_group: wgpu::BindGroup,
-    pub atlas_layout: wgpu::BindGroupLayout,
     pub uniform_bind_group: wgpu::BindGroup,
-    pub uniform_layout: wgpu::BindGroupLayout,
     pub uniform_buffer: wgpu::Buffer,
 }
 
@@ -112,9 +110,7 @@ impl TextPipeline {
         Self {
             pipeline,
             atlas_bind_group,
-            atlas_layout,
             uniform_bind_group,
-            uniform_layout,
             uniform_buffer,
         }
     }

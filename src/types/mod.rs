@@ -1,7 +1,9 @@
 pub mod color;
-pub mod options;
 pub mod glyph;
+pub mod options;
+pub mod shaped_glyph;
 
 pub use color::Color;
-pub use options::{TextOptions, FontWeight, TextWrap};
-pub use glyph::{GlyphKey, AtlasEntry, RasterizedGlyph, GlyphInstance};
+pub use glyph::{AtlasEntry, GlyphInstance, GlyphKey, RasterizedGlyph};
+pub use options::{FontWeight, HorizontalAlignment, TextOptions, TextWrap, VerticalAlignment};
+pub use shaped_glyph::ShapedGlyph;

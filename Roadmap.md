@@ -20,26 +20,26 @@ These are blocking tasks before any real work begins.
 
 Reorganize `src/` from binary layout to library layout.
 
-- [ ] Create `src/lib.rs` as the crate root
-- [ ] Create `src/prelude.rs`
-- [ ] Create `src/types/` module
-  - [ ] `color.rs` — `Color` struct
-  - [ ] `options.rs` — `TextOptions` struct
-  - [ ] `glyph.rs` — `GlyphKey`, `AtlasEntry`, `RasterizedGlyph`
-- [ ] Create `src/traits/` module
-  - [ ] `font_provider.rs` — `FontProvider` trait
-  - [ ] `rasterizer.rs` — `Rasterizer` trait
-  - [ ] `atlas.rs` — `Atlas` trait
-- [ ] Move `src/gpu/atlas.rs` → split into `src/gpu/atlas.rs` + `src/primitives/atlas.rs`
-- [ ] Move `src/gpu/pipeline.rs` → split into `src/gpu/pipeline.rs` + `src/primitives/pipeline.rs`
-- [ ] Create `src/primitives/shaped_buffer.rs`
-- [ ] Create `src/defaults/` module
-  - [ ] `cosmic_font.rs` — `CosmicFontProvider`
-  - [ ] `swash_raster.rs` — `SwashRasterizer`
-  - [ ] `zentype_atlas.rs` — `ZentypeAtlas`
-- [ ] Create `src/renderer/text_renderer.rs` — `TextRenderer` (Level 2)
-- [ ] Create `src/managed/zentype.rs` — `Zentype` (Level 1)
-- [ ] Slim down `src/main.rs` to a thin demo that uses `lib.rs`
+- [x] Create `src/lib.rs` as the crate root
+- [x] Create `src/prelude.rs`
+- [x] Create `src/types/` module
+  - [x] `color.rs` — `Color` struct
+  - [x] `options.rs` — `TextOptions` struct
+  - [x] `glyph.rs` — `GlyphKey`, `AtlasEntry`, `RasterizedGlyph`
+- [x] Create `src/traits/` module
+  - [x] `font_provider.rs` — `FontProvider` trait
+  - [x] `rasterizer.rs` — `Rasterizer` trait
+  - [x] `atlas.rs` — `Atlas` trait
+- [x] Move `src/gpu/atlas.rs` → split into `src/gpu/atlas.rs` + `src/primitives/atlas.rs`
+- [x] Move `src/gpu/pipeline.rs` → split into `src/gpu/pipeline.rs` + `src/primitives/pipeline.rs`
+- [x] Create `src/primitives/shaped_buffer.rs`
+- [x] Create `src/defaults/` module
+  - [x] `cosmic_font.rs` — `CosmicFontProvider`
+  - [x] `swash_raster.rs` — `SwashRasterizer`
+  - [x] `zentype_atlas.rs` — `ZentypeAtlas`
+- [x] Create `src/renderer/text_renderer.rs` — `TextRenderer` (Level 2)
+- [x] Create `src/managed/zentype.rs` — `Zentype` (Level 1)
+- [x] Slim down `src/main.rs` to a thin demo that uses `lib.rs`
 
 ---
 
@@ -47,21 +47,21 @@ Reorganize `src/` from binary layout to library layout.
 
 Build the shared types everything else depends on.
 
-- [ ] Implement `Color`
-  - [ ] `Color::rgb(r, g, b)`
-  - [ ] `Color::rgba(r, g, b, a)`
-  - [ ] `Color::hex(str)`
-  - [ ] `Color::WHITE`, `Color::BLACK`, `Color::TRANSPARENT` constants
-- [ ] Implement `TextOptions` with `Default`
-  - [ ] `x`, `y` position
-  - [ ] `font_size`, `color`, `font_family`, `font_weight`
-  - [ ] `bg_color`, `bg_padding`, `full_width_bg`
-  - [ ] `max_width`, `line_height`, `wrap`
-- [ ] Implement `FontWeight` enum (`Thin`, `Regular`, `Medium`, `Bold`, `Black`)
-- [ ] Implement `TextWrap` enum (`Word`, `Character`, `None`)
-- [ ] Implement `GlyphKey` (hash-friendly, used as atlas cache key)
-- [ ] Implement `AtlasEntry` (UV coords + size on texture)
-- [ ] Implement `RasterizedGlyph` (pixel data + metrics)
+- [x] Implement `Color`
+  - [x] `Color::rgb(r, g, b)`
+  - [x] `Color::rgba(r, g, b, a)`
+  - [x] `Color::hex(str)`
+  - [x] `Color::WHITE`, `Color::BLACK`, `Color::TRANSPARENT` constants
+- [x] Implement `TextOptions` with `Default`
+  - [x] `x`, `y` position
+  - [x] `font_size`, `color`, `font_family`, `font_weight`
+  - [x] `bg_color`, `bg_padding`, `full_width_bg`
+  - [x] `max_width`, `line_height`, `wrap`
+- [x] Implement `FontWeight` enum (`Thin`, `Regular`, `Medium`, `Bold`, `Black`)
+- [x] Implement `TextWrap` enum (`Word`, `Character`, `None`)
+- [x] Implement `GlyphKey` (hash-friendly, used as atlas cache key)
+- [x] Implement `AtlasEntry` (UV coords + size on texture)
+- [x] Implement `RasterizedGlyph` (pixel data + metrics)
 
 ---
 
