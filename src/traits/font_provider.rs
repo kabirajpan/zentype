@@ -1,11 +1,19 @@
+use std::path::Path;
 use crate::types::options::TextOptions;
-use crate::types::shaped_glyph::ShapedGlyph;
+use crate::primitives::shaped_buffer::ShapedBuffer;
+// Removed unused Attrs import
 
 /// A trait for components that can load fonts and shape text into glyphs.
-pub trait FontProvider {
-    /// Shapes a string of text into a list of positioned glyphs.
+pub trait FontProvider: Send + Sync {
+    /// Shapes a string of text into a buffered list of positioned glyphs.
     /// This handles layout, wrapping, and alignment internally.
-    fn shape(&mut self, text: &str, options: &TextOptions) -> Vec<ShapedGlyph>;
+    fn shape(&mut self, text: &str, options: &TextOptions) -> ShapedBuffer;
+
+    /// Loads a font from raw byte data.
+    fn load_font(&mut self, data: Vec<u8>);
+
+    /// Loads a font from a file path.
+    fn load_font_path(&mut self, path: &Path) -> std::io::Result<()>;
 
     /// Returns the metrics for a given set of options (e.g., line height).
     fn metrics(&self, options: &TextOptions) -> FontMetrics;
@@ -24,3 +32,4 @@ impl FontMetrics {
         self.ascent - self.descent + self.line_gap
     }
 }
+

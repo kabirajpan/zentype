@@ -16,7 +16,7 @@ These are blocking tasks before any real work begins.
 
 ---
 
-## 🟡 Phase 1 — Folder Restructure
+## 🟢 Phase 1 — Folder Restructure (DONE)
 
 Reorganize `src/` from binary layout to library layout.
 
@@ -43,7 +43,7 @@ Reorganize `src/` from binary layout to library layout.
 
 ---
 
-## 🟢 Phase 2 — Core Types
+## 🟢 Phase 2 — Core Types (DONE)
 
 Build the shared types everything else depends on.
 
@@ -65,7 +65,7 @@ Build the shared types everything else depends on.
 
 ---
 
-## 🔵 Phase 3 — Traits
+## 🟢 Phase 3 — Traits (DONE)
 
 Define the swappable interfaces.
 

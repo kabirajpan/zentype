@@ -3,7 +3,7 @@ use crate::types::glyph::GlyphInstance;
 use cosmic_text::{Buffer, FontSystem, Metrics, SwashCache};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
-use crate::types::options::{Padding, HorizontalAlignment, VerticalAlignment};
+use crate::types::options::VerticalAlignment;
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -111,14 +111,17 @@ impl AppState {
             Some(size.height as f32 - padding.top - padding.bottom),
         );
 
+        // Shape first, THEN apply alignment once glyphs are measured
+        buffer.shape_until_scroll(&mut font_system, false);
+
         if let Some(alignment) = options.align {
             let align: cosmic_text::Align = alignment.into();
             for line in buffer.lines.iter_mut() {
                 line.set_align(Some(align));
             }
+            // Re-shape once more to reflect alignment positions
+            buffer.shape_until_scroll(&mut font_system, false);
         }
-
-        buffer.shape_until_scroll(&mut font_system, false);
 
         Self {
             window,

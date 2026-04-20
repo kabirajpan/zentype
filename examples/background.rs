@@ -5,7 +5,7 @@ use zentype::testing::VisualTester;
 fn main() {
     VisualTester::run(|font_system, buffer| {
         // A single, continuous paragraph with no manual newlines (\n)
-        let text = "ok.";
+        let text = "Kabiraj Pan";
 
         // Set metrics
         buffer.set_metrics(font_system, Metrics::new(24.0, 32.0));
@@ -16,8 +16,8 @@ fn main() {
             .color(Color::WHITE)
             .bg(Color::GREEN)
             .padding(30.0)
-            .align(HorizontalAlignment::Right)
-            .valign(VerticalAlignment::Bottom);
+            .align(HorizontalAlignment::Center)
+            .valign(VerticalAlignment::Center);
 
         options.apply(font_system, buffer);
 

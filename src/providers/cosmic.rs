@@ -1,6 +1,7 @@
 use crate::traits::font_provider::{FontProvider, FontMetrics};
 use crate::types::options::TextOptions;
 use crate::types::shaped_glyph::ShapedGlyph;
+use crate::primitives::shaped_buffer::ShapedBuffer;
 use cosmic_text::{Buffer, FontSystem, Metrics, Align, Shaping};
 
 /// A FontProvider that uses the `cosmic-text` library for shaping and layout.
@@ -22,7 +23,7 @@ impl CosmicFontProvider {
 }
 
 impl FontProvider for CosmicFontProvider {
-    fn shape(&mut self, text: &str, options: &TextOptions) -> Vec<ShapedGlyph> {
+    fn shape(&mut self, text: &str, options: &TextOptions) -> ShapedBuffer {
         // 1. Convert our options to cosmic-text metrics
         let metrics = Metrics::new(
             options.font_size,
@@ -52,8 +53,14 @@ impl FontProvider for CosmicFontProvider {
 
         // 5. Convert cosmic-text layout runs into our internal ShapedGlyphs
         let mut shaped_glyphs = Vec::new();
+        let mut max_width: f32 = 0.0;
+        let mut max_height: f32 = 0.0;
+
         for run in self.buffer.layout_runs() {
+            max_height = max_height.max(run.line_y + metrics.line_height);
             for glyph in run.glyphs {
+                max_width = max_width.max(glyph.x + glyph.w);
+                
                 // Accessing physical position to get the cache key
                 let physical = glyph.physical((0.0, 0.0), 1.0);
                 shaped_glyphs.push(ShapedGlyph {
@@ -66,7 +73,21 @@ impl FontProvider for CosmicFontProvider {
             }
         }
 
-        shaped_glyphs
+        // Return the new ShapedBuffer primitive
+        ShapedBuffer::new(
+            shaped_glyphs,
+            max_width,
+            max_height,
+        )
+    }
+
+
+    fn load_font(&mut self, data: Vec<u8>) {
+        self.font_system.db_mut().load_font_data(data);
+    }
+
+    fn load_font_path(&mut self, path: &std::path::Path) -> std::io::Result<()> {
+        self.font_system.db_mut().load_font_file(path)
     }
 
     fn metrics(&self, options: &TextOptions) -> FontMetrics {
@@ -80,3 +101,4 @@ impl FontProvider for CosmicFontProvider {
         }
     }
 }
+

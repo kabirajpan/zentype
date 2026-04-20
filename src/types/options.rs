@@ -1,5 +1,5 @@
 use crate::types::color::Color;
-use cosmic_text::{Buffer, FontSystem, Metrics, Align, Attrs};
+use cosmic_text::{Align, Attrs, Buffer, FontSystem, Metrics};
 
 /// Options for configuring text rendering.
 /// Use the builder-like methods for a fluent API.
@@ -13,6 +13,7 @@ pub struct TextOptions {
     pub color: Color,
     pub font_family: Option<String>,
     pub font_weight: FontWeight,
+    pub font_style: FontStyle,
 
     pub bg_color: Option<Color>,
     pub padding: Padding,
@@ -45,6 +46,7 @@ impl Default for TextOptions {
             color: Color::WHITE,
             font_family: None,
             font_weight: FontWeight::Regular,
+            font_style: FontStyle::Normal,
             bg_color: None,
             padding: Padding::all(4.0),
             full_width_bg: false,
@@ -85,6 +87,11 @@ impl TextOptions {
 
     pub fn font_weight(mut self, weight: FontWeight) -> Self {
         self.font_weight = weight;
+        self
+    }
+
+    pub fn font_style(mut self, style: FontStyle) -> Self {
+        self.font_style = style;
         self
     }
 
@@ -172,19 +179,36 @@ impl TextOptions {
             Metrics::new(self.font_size, self.font_size * self.line_height),
         );
 
-        // Set alignment for all lines ONLY if it was explicitly provided
+        // Shape first, THEN apply alignment once glyphs are measured
+        buffer.shape_until_scroll(font_system, false);
+
         if let Some(alignment) = self.align {
             let align: Align = alignment.into();
             for line in buffer.lines.iter_mut() {
                 line.set_align(Some(align));
             }
+            // Re-shape once more to reflect alignment positions
+            buffer.shape_until_scroll(font_system, false);
         }
     }
 
     pub fn as_attrs(&self) -> Attrs<'_> {
-        Attrs::new()
+        let mut attrs = Attrs::new()
             .color(self.color.into())
             .weight(self.font_weight.into())
+            .style(self.font_style.into());
+
+        if let Some(ref family) = self.font_family {
+            let family_enum = match family.to_lowercase().as_str() {
+                "sans-serif" => cosmic_text::Family::SansSerif,
+                "serif" => cosmic_text::Family::Serif,
+                "monospace" => cosmic_text::Family::Monospace,
+                _ => cosmic_text::Family::Name(family),
+            };
+            attrs = attrs.family(family_enum);
+        }
+
+        attrs
     }
 }
 
@@ -201,6 +225,25 @@ pub enum FontWeight {
     Bold,
     ExtraBold,
     Black,
+}
+
+/// Supported font styles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FontStyle {
+    #[default]
+    Normal,
+    Italic,
+    Oblique,
+}
+
+impl From<FontStyle> for cosmic_text::Style {
+    fn from(style: FontStyle) -> Self {
+        match style {
+            FontStyle::Normal => cosmic_text::Style::Normal,
+            FontStyle::Italic => cosmic_text::Style::Italic,
+            FontStyle::Oblique => cosmic_text::Style::Oblique,
+        }
+    }
 }
 
 impl From<FontWeight> for cosmic_text::Weight {

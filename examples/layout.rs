@@ -1,6 +1,6 @@
+use cosmic_text::{Attrs, Shaping};
 use zentype::prelude::*;
 use zentype::testing::VisualTester;
-use cosmic_text::{Attrs, Shaping};
 
 fn main() {
     VisualTester::run(|font_system, buffer| {
@@ -15,7 +15,7 @@ fn main() {
             .line_height(1.8) // Spacious layout
             .max_width(400.0)
             .wrap(TextWrap::Word)
-            .align(TextAlignment::Justified);
+            .align(HorizontalAlignment::Justified);
 
         options.apply(font_system, buffer);
 

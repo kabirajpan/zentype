@@ -41,12 +41,12 @@ fn test_text_options_complex_builder() {
         .font_family("JetBrains Mono")
         .font_weight(FontWeight::Bold)
         .bg(Color::BLACK)
-        .bg_padding(10.0)
+        .padding(10.0)
         .full_width(true)
         .max_width(500.0)
         .line_height(1.8)
         .wrap(TextWrap::Character)
-        .align(TextAlignment::Right);
+        .align(HorizontalAlignment::Right);
 
     assert_eq!(opts.x, 100.0);
     assert_eq!(opts.y, 100.0);
@@ -55,12 +55,12 @@ fn test_text_options_complex_builder() {
     assert_eq!(opts.font_family, Some("JetBrains Mono".to_string()));
     assert_eq!(opts.font_weight, FontWeight::Bold);
     assert_eq!(opts.bg_color, Some(Color::BLACK));
-    assert_eq!(opts.bg_padding, 10.0);
+    assert_eq!(opts.padding, Padding::all(10.0));
     assert!(opts.full_width_bg);
     assert_eq!(opts.max_width, Some(500.0));
     assert_eq!(opts.line_height, 1.8);
     assert_eq!(opts.wrap, TextWrap::Character);
-    assert_eq!(opts.align, HorizontalAlignment::Right);
+    assert_eq!(opts.align, Some(HorizontalAlignment::Right));
 }
 
 #[test]
