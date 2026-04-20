@@ -44,7 +44,10 @@ impl Rasterizer for SwashRasterizer {
         Some(RasterizedGlyph {
             width: image.placement.width,
             height: image.placement.height,
+            left: image.placement.left,
+            top: image.placement.top,
             data: image.data.clone(),
         })
+
     }
 }

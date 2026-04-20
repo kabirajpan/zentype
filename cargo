@@ -1,0 +1,2 @@
+[alias]
+example_zentype = "!f() { sed -i '/^\\[\\[example\\]\\]/,/^path/d' Cargo.toml; for file in example_zentype/*.rs; do name=$(basename \"$file\" .rs); printf '\\n[[example]]\\nname=\"%s\"\\npath=\"%s\"\\n' \"$name\" \"$file\" >> Cargo.toml; done; cargo run --example \"$1\"; }; f"

@@ -7,9 +7,10 @@ pub struct GlyphAtlas {
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
     allocator: AtlasAllocator,
-    cached: HashMap<CacheKey, (f32, f32, f32, f32)>, // x, y, w, h in UV coords
+    cached: HashMap<CacheKey, crate::types::glyph::AtlasEntry>,
     size: u32,
 }
+
 
 impl GlyphAtlas {
     pub fn new(device: &wgpu::Device, size: u32) -> Self {
@@ -32,8 +33,9 @@ impl GlyphAtlas {
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+
             ..Default::default()
         });
 
@@ -47,32 +49,46 @@ impl GlyphAtlas {
         }
     }
 
-    pub fn get(&self, key: &CacheKey) -> Option<&(f32, f32, f32, f32)> {
+    pub fn get(&self, key: &CacheKey) -> Option<&crate::types::glyph::AtlasEntry> {
         self.cached.get(key)
     }
 
-    pub fn insert(&mut self, queue: &wgpu::Queue, key: CacheKey, width: u32, height: u32, data: &[u8]) -> (f32, f32, f32, f32) {
+
+    pub fn insert(&mut self, queue: &wgpu::Queue, key: CacheKey, glyph: &crate::types::glyph::RasterizedGlyph) -> crate::types::glyph::AtlasEntry {
+        let width = glyph.width;
+        let height = glyph.height;
+
         if width == 0 || height == 0 {
-             return (0.0, 0.0, 0.0, 0.0);
+             return crate::types::glyph::AtlasEntry {
+                uv_pos: [0.0, 0.0],
+                uv_size: [0.0, 0.0],
+                pixel_size: [0.0, 0.0],
+                pixel_offset: [0.0, 0.0],
+             };
         }
 
-        let allocation = self.allocator.allocate(size2(width as i32, height as i32))
+        // Add 1px padding on all sides to prevent bleeding
+        let pad = 1;
+        let alloc_width = width as i32 + (pad * 2);
+        let alloc_height = height as i32 + (pad * 2);
+
+        let allocation = self.allocator.allocate(size2(alloc_width, alloc_height))
             .expect("Atlas out of space");
         
         let rect = allocation.rectangle;
         
+        // The glyph itself starts at +1, +1 from the allocated rectangle
+        let x = rect.min.x as u32 + pad as u32;
+        let y = rect.min.y as u32 + pad as u32;
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &self.texture,
                 mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x: rect.min.x as u32,
-                    y: rect.min.y as u32,
-                    z: 0,
-                },
+                origin: wgpu::Origin3d { x, y, z: 0 },
                 aspect: wgpu::TextureAspect::All,
             },
-            data,
+            &glyph.data,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(width),
@@ -85,14 +101,30 @@ impl GlyphAtlas {
             },
         );
 
-        let uv = (
-            rect.min.x as f32 / self.size as f32,
-            rect.min.y as f32 / self.size as f32,
-            width as f32 / self.size as f32,
-            height as f32 / self.size as f32,
-        );
+        let entry = crate::types::glyph::AtlasEntry {
+            uv_pos: [
+                x as f32 / self.size as f32,
+                y as f32 / self.size as f32,
+            ],
+            uv_size: [
+                width as f32 / self.size as f32,
+                height as f32 / self.size as f32,
+            ],
+            pixel_size: [width as f32, height as f32],
+            pixel_offset: [glyph.left as f32, glyph.top as f32],
+        };
+
         
-        self.cached.insert(key, uv);
-        uv
+        self.cached.insert(key, entry);
+        entry
+    }
+
+
+
+    /// Clears the atlas and resets the allocator.
+    pub fn clear(&mut self) {
+        self.allocator.clear();
+        self.cached.clear();
     }
 }
+

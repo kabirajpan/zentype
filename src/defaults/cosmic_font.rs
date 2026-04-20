@@ -1,9 +1,9 @@
-use std::path::Path;
-use crate::traits::font_provider::{FontProvider, FontMetrics};
+use crate::primitives::shaped_buffer::ShapedBuffer;
+use crate::traits::font_provider::{FontMetrics, FontProvider};
 use crate::types::options::TextOptions;
 use crate::types::shaped_glyph::ShapedGlyph;
-use crate::primitives::shaped_buffer::ShapedBuffer;
-use cosmic_text::{Buffer, FontSystem, Metrics, Align, Shaping};
+use cosmic_text::{Align, Buffer, FontSystem, Metrics, Shaping};
+use std::path::Path;
 
 /// A FontProvider that uses the `cosmic-text` library for shaping and layout.
 pub struct CosmicFontProvider {
@@ -42,10 +42,7 @@ impl Default for CosmicFontProvider {
 impl FontProvider for CosmicFontProvider {
     fn shape(&mut self, text: &str, options: &TextOptions) -> ShapedBuffer {
         // 1. Convert our options to cosmic-text metrics
-        let metrics = Metrics::new(
-            options.font_size,
-            options.font_size * options.line_height,
-        );
+        let metrics = Metrics::new(options.font_size, options.font_size * options.line_height);
         self.buffer.set_metrics(&mut self.font_system, metrics);
 
         // 2. Set the text and initial shaping
@@ -70,14 +67,33 @@ impl FontProvider for CosmicFontProvider {
 
         // 5. Convert layout runs into our internal primitives
         let mut shaped_glyphs = Vec::new();
+        let mut lines = Vec::new();
         let mut max_width: f32 = 0.0;
         let mut max_height: f32 = 0.0;
 
         for run in self.buffer.layout_runs() {
             max_height = max_height.max(run.line_y + metrics.line_height);
+
+            // Capture line geometry for automatic backgrounds
+            // We calculate the alignment offset manually since cosmic-text doesn't expose it directly in LayoutRun
+            let layout_width = self.buffer.size().0.unwrap_or(run.line_w);
+            let alignment_offset = match options.align {
+                Some(crate::types::HorizontalAlignment::Center) => {
+                    (layout_width - run.line_w) / 2.0
+                }
+                Some(crate::types::HorizontalAlignment::Right) => layout_width - run.line_w,
+                _ => 0.0,
+            };
+
+            lines.push(crate::types::line::LineInfo {
+                x: alignment_offset,
+                y: run.line_y,
+                width: run.line_w,
+            });
+
             for glyph in run.glyphs {
                 max_width = max_width.max(glyph.x + glyph.w);
-                
+
                 // Get the cache key representing this unique glyph at this size/weight/style
                 let physical = glyph.physical((0.0, 0.0), 1.0);
                 shaped_glyphs.push(ShapedGlyph {
@@ -85,12 +101,12 @@ impl FontProvider for CosmicFontProvider {
                     x: glyph.x,
                     y: run.line_y + glyph.y,
                     width: glyph.w,
-                    height: metrics.line_height,
+                    height: 0.0, // Precision height managed by TextRenderer via Atlas
                 });
             }
         }
 
-        ShapedBuffer::new(shaped_glyphs, max_width, max_height)
+        ShapedBuffer::new(shaped_glyphs, lines, max_width, max_height)
     }
 
     fn load_font(&mut self, data: Vec<u8>) {
@@ -104,12 +120,17 @@ impl FontProvider for CosmicFontProvider {
     fn metrics(&self, options: &TextOptions) -> FontMetrics {
         let font_size = options.font_size;
         let line_height = font_size * options.line_height;
-        
+
         // Simple heuristic for metrics - Phase 7 will refine this with actual font data
         FontMetrics {
-            ascent: font_size, 
-            descent: - (line_height - font_size),
+            ascent: font_size,
+            descent: -(line_height - font_size),
             line_gap: 0.0,
         }
+    }
+
+    fn set_layout_size(&mut self, width: f32, height: f32) {
+        self.buffer
+            .set_size(&mut self.font_system, Some(width), Some(height));
     }
 }

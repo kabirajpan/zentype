@@ -118,4 +118,14 @@ impl TextPipeline {
     pub fn update_screen_size(&self, queue: &wgpu::Queue, width: f32, height: f32) {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[width, height]));
     }
+
+    /// Records the commands to draw the provided instances.
+    pub fn draw<'a>(&'a self, rpass: &mut wgpu::RenderPass<'a>, instance_buffer: &'a wgpu::Buffer, instance_count: u32) {
+        rpass.set_pipeline(&self.pipeline);
+        rpass.set_bind_group(0, &self.atlas_bind_group, &[]);
+        rpass.set_bind_group(1, &self.uniform_bind_group, &[]);
+        rpass.set_vertex_buffer(0, instance_buffer.slice(..));
+        rpass.draw(0..4, 0..instance_count);
+    }
 }
+

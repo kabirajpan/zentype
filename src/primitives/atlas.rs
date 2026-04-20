@@ -12,21 +12,29 @@ impl GlyphAtlas {
     }
 
     pub fn get(&self, key: &GlyphKey) -> Option<AtlasEntry> {
-        self.inner.get(key).map(|&(x, y, w, h)| AtlasEntry {
-            uv_pos: [x, y],
-            uv_size: [w, h],
-        })
+        self.inner.get(key).copied()
     }
 
-    pub fn insert(&mut self, queue: &wgpu::Queue, key: GlyphKey, width: u32, height: u32, data: &[u8]) -> AtlasEntry {
-        let (x, y, w, h) = self.inner.insert(queue, key, width, height, data);
-        AtlasEntry {
-            uv_pos: [x, y],
-            uv_size: [w, h],
-        }
+    pub fn insert(&mut self, queue: &wgpu::Queue, key: GlyphKey, glyph: &crate::types::glyph::RasterizedGlyph) -> AtlasEntry {
+        self.inner.insert(queue, key, glyph)
     }
+
 
     pub fn texture(&self) -> &wgpu::Texture {
         &self.inner.texture
     }
+
+    pub fn view(&self) -> &wgpu::TextureView {
+        &self.inner.view
+    }
+
+    pub fn sampler(&self) -> &wgpu::Sampler {
+        &self.inner.sampler
+    }
+
+    /// Clears the atlas and resets the allocator.
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
 }
+

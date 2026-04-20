@@ -28,6 +28,8 @@ pub struct TextOptions {
     pub valign: Option<VerticalAlignment>,
 }
 
+
+
 use std::cell::RefCell;
 thread_local! {
     static LAST_APPLIED_OPTIONS: RefCell<TextOptions> = RefCell::new(TextOptions::default());
@@ -48,7 +50,8 @@ impl Default for TextOptions {
             font_weight: FontWeight::Regular,
             font_style: FontStyle::Normal,
             bg_color: None,
-            padding: Padding::all(4.0),
+            padding: Padding::all(0.0),
+
             full_width_bg: false,
             max_width: None,
             line_height: 1.5,
@@ -58,6 +61,7 @@ impl Default for TextOptions {
         }
     }
 }
+
 
 impl TextOptions {
     pub fn new() -> Self {
@@ -168,6 +172,7 @@ impl TextOptions {
     }
 
     pub fn apply(&self, font_system: &mut FontSystem, buffer: &mut Buffer) {
+
         // Save to global state for testing tools
         LAST_APPLIED_OPTIONS.with(|opts| {
             *opts.borrow_mut() = self.clone();
@@ -178,6 +183,17 @@ impl TextOptions {
             font_system,
             Metrics::new(self.font_size, self.font_size * self.line_height),
         );
+
+        // Set size and wrap mode
+        let wrap = match self.wrap {
+            TextWrap::Word => cosmic_text::Wrap::Word,
+            TextWrap::Character => cosmic_text::Wrap::Glyph,
+            TextWrap::None => cosmic_text::Wrap::None,
+        };
+
+        
+        buffer.set_size(font_system, self.max_width, None);
+        buffer.set_wrap(font_system, wrap);
 
         // Shape first, THEN apply alignment once glyphs are measured
         buffer.shape_until_scroll(font_system, false);
@@ -193,6 +209,7 @@ impl TextOptions {
     }
 
     pub fn as_attrs(&self) -> Attrs<'_> {
+
         let mut attrs = Attrs::new()
             .color(self.color.into())
             .weight(self.font_weight.into())

@@ -1,9 +1,12 @@
 use crate::primitives::{GlyphAtlas, ZentypePipeline as TextPipeline};
-use crate::types::glyph::GlyphInstance;
+
+
 use cosmic_text::{Buffer, FontSystem, Metrics, SwashCache};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use crate::types::options::VerticalAlignment;
+
+use crate::renderer::TextRenderer;
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -26,19 +29,58 @@ impl VisualTester {
         let mut app = App {
             state: None,
             callback: Box::new(callback),
+            renderer_callback: None,
+            zentype_callback: None,
+        };
+
+        let _ = event_loop.run_app(&mut app);
+    }
+
+    /// Level 2: Managed TextRenderer
+    pub fn run_renderer<F>(callback: F)
+    where
+        F: FnMut(&mut TextRenderer, &wgpu::Queue) + 'static,
+    {
+        let event_loop = EventLoop::new().unwrap();
+        let mut app = App {
+            state: None,
+            callback: Box::new(|_, _| {}), // Dummy
+            renderer_callback: Some(Box::new(callback)),
+            zentype_callback: None,
+        };
+        let _ = event_loop.run_app(&mut app);
+    }
+
+    /// Level 1: Managed Zentype entry point
+    pub fn run_zentype<F>(callback: F)
+    where
+        F: FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue) + 'static,
+    {
+        let event_loop = EventLoop::new().unwrap();
+        let mut app = App {
+            state: None,
+            callback: Box::new(|_, _| {}), // Dummy
+            renderer_callback: None,
+            zentype_callback: Some(Box::new(callback)),
         };
         let _ = event_loop.run_app(&mut app);
     }
 }
 
+
+
 struct App {
     state: Option<AppState>,
     callback: Box<dyn FnMut(&mut FontSystem, &mut Buffer)>,
+    renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue)>>,
+    zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue)>>,
 }
+
+
 
 struct AppState {
     window: Arc<Window>,
-    device: wgpu::Device,
+    device: Arc<wgpu::Device>,
     queue: wgpu::Queue,
     surface: wgpu::Surface<'static>,
     config: wgpu::SurfaceConfiguration,
@@ -46,15 +88,26 @@ struct AppState {
     font_system: FontSystem,
     swash_cache: SwashCache,
     atlas: GlyphAtlas,
-    pipeline: TextPipeline,
+    pipeline: Option<TextPipeline>,
     buffer: Buffer,
+
+    renderer: Option<TextRenderer>,
+    renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue)>>,
+    zentype: Option<crate::managed::zentype::Zentype>,
+    zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue)>>,
 }
+
+
+
 
 impl AppState {
     async fn new(
         window: Arc<Window>,
         mut callback: Box<dyn FnMut(&mut FontSystem, &mut Buffer)>,
+        renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue)>>,
+        zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue)>>,
     ) -> Self {
+
         let size = window.inner_size();
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(window.clone()).unwrap();
@@ -70,6 +123,7 @@ impl AppState {
             .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .unwrap();
+        let device = Arc::new(device);
 
         let surface_caps = surface.get_capabilities(&adapter);
         let config = wgpu::SurfaceConfiguration {
@@ -123,6 +177,25 @@ impl AppState {
             buffer.shape_until_scroll(&mut font_system, false);
         }
 
+        let renderer = if renderer_callback.is_some() {
+            Some(TextRenderer::new(device.clone(), &queue, &config, 
+                Box::new(crate::defaults::cosmic_font::CosmicFontProvider::new()),
+                Box::new(crate::defaults::swash_raster::SwashRasterizer::new()),
+                crate::primitives::atlas::GlyphAtlas::new(&device, 2048)
+
+            ))
+        } else {
+            None
+        };
+
+
+        let zentype = if zentype_callback.is_some() {
+            Some(crate::managed::zentype::Zentype::new(device.clone(), &queue, &config))
+        } else {
+            None
+        };
+
+
         Self {
             window,
             device,
@@ -132,19 +205,34 @@ impl AppState {
             font_system,
             swash_cache,
             atlas,
-            pipeline,
+            pipeline: Some(pipeline),
             buffer,
+            renderer,
+            renderer_callback,
+            zentype,
+            zentype_callback,
         }
     }
+
+
 
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.pipeline.update_screen_size(&self.queue, new_size.width as f32, new_size.height as f32);
+        if let Some(pipeline) = &self.pipeline {
+            pipeline.update_screen_size(&self.queue, new_size.width as f32, new_size.height as f32);
+        }
             
-            // Re-set the buffer size to match new window dimensions (accounting for padding)
+            // Inform the managed renderer about the resize
+            if let Some(renderer) = &mut self.renderer {
+                renderer.resize(&self.queue, new_size.width, new_size.height);
+            }
+            if let Some(zentype) = &mut self.zentype {
+                zentype.resize(&self.queue, new_size.width, new_size.height);
+            }
+
             let options = crate::types::options::get_last_applied();
             let padding = options.padding;
             self.buffer.set_size(
@@ -167,7 +255,58 @@ impl AppState {
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        let mut instances = Vec::new();
+        if let (Some(zentype), Some(callback)) = (&mut self.zentype, &mut self.zentype_callback) {
+            // --- LEVEL 1 MANAGED ZENTYPE PATH ---
+            callback(zentype, &self.queue);
+            
+            {
+                let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: None,
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.01, g: 0.01, b: 0.01, a: 1.0 }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    ..Default::default()
+                });
+                zentype.render(&mut rpass);
+            }
+            self.queue.submit(std::iter::once(encoder.finish()));
+            surface_texture.present();
+            return;
+        }
+
+        if let (Some(renderer), Some(callback)) = (&mut self.renderer, &mut self.renderer_callback) {
+            // --- LEVEL 2 MANAGED RENDERER PATH ---
+
+            callback(renderer, &self.queue);
+            
+            {
+                let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: None,
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.01, g: 0.01, b: 0.01, a: 1.0 }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    })],
+                    ..Default::default()
+                });
+                renderer.render(&mut rpass);
+            }
+            self.queue.submit(std::iter::once(encoder.finish()));
+            surface_texture.present();
+            return;
+        }
+
+        // 1. Calculate Vertical Alignment & Safe Areas
         let options = crate::types::options::get_last_applied();
 
         // 1. Calculate Vertical Alignment & Safe Areas
@@ -189,93 +328,98 @@ impl AppState {
         
         // Determine vertical start (relative to window top)
         let valign = options.valign.unwrap_or(VerticalAlignment::Top);
+
         let v_offset = match valign {
             VerticalAlignment::Top => padding.top,
             VerticalAlignment::Center => padding.top + (safe_height - visual_height).max(0.0) / 2.0,
             VerticalAlignment::Bottom => (self.config.height as f32 - visual_height).max(0.0),
         };
 
-        // 2. Render Backgrounds first
-        if let Some(bg_color) = options.bg_color {
-            for run in self.buffer.layout_runs() {
-                // Get the horizontal start of the text in this run
-                let line_x = run.glyphs.first().map(|g| g.x).unwrap_or(0.0);
-                
-                // Calculate bounds (relative to window)
-                let width = if options.full_width_bg { self.config.width as f32 } else { run.line_w + padding.left + padding.right };
-                
-                // pos.x needs an extra 'padding' offset because the whole line is inset
-                let final_x = if options.full_width_bg { 0.0 } else { line_x };
-                
-                // Background instance (UV size 0 means solid color)
-                let line_height = metrics.line_height as f32;
-                let font_size = metrics.font_size as f32;
-                
-                // We center the highlight vertically around the text's visual center
-                // Visual center is approx (ascent - descent)/2 above the baseline.
-                let visual_center_offset = font_size * 0.4; 
-                let y_top = v_offset + run.line_y as f32 - visual_center_offset - (line_height / 2.0) - padding.top;
+        // 2. Retrieve the options that were applied by the user in their example
+        let options = crate::types::options::get_last_applied();
+        let padding = options.padding;
 
-                instances.push(GlyphInstance {
-                    pos: [final_x, y_top],
-                    size: [width, (line_height + padding.top + padding.bottom)],
-                    uv_pos: [0.0, 0.0],
-                    uv_size: [0.0, 0.0],
-                    color: [0.0, 0.0, 0.0, 0.0],
-                    bg_color: bg_color.into(),
-                });
-            }
-        }
-
-        // 3. Render Glyphs
+        // --- RASTERIZATION PRE-PASS ---
+        // We must ensure all glyphs are in the atlas BEFORE we generate instances.
         for run in self.buffer.layout_runs() {
-            let padding = options.padding;
             for glyph in run.glyphs {
-                let physical_glyph = glyph.physical((padding.left, v_offset), 1.0);
-                let image = match self
-                    .swash_cache
-                    .get_image(&mut self.font_system, physical_glyph.cache_key)
-                {
-                    Some(img) => img,
-                    None => continue,
-                };
+                let physical = glyph.physical((0.0, 0.0), 1.0);
+                if self.atlas.get(&physical.cache_key).is_none() {
+                    // Rasterize on the fly for the test tool
+                    if let Some(image) = self.swash_cache.get_image(&mut self.font_system, physical.cache_key) {
+                        self.atlas.insert(
+                            &self.queue,
+                            physical.cache_key,
+                            &crate::types::glyph::RasterizedGlyph {
+                                width: image.placement.width,
+                                height: image.placement.height,
+                                left: image.placement.left,
+                                top: image.placement.top,
+                                data: image.data.clone(),
+                            }
+                        );
+                    }
+                }
+            }
+        }
 
-                let uv = if let Some(uv) = self.atlas.get(&physical_glyph.cache_key) {
-                    uv
-                } else {
-                    self.atlas.insert(
-                        &self.queue,
-                        physical_glyph.cache_key,
-                        image.placement.width,
-                        image.placement.height,
-                        &image.data,
-                    )
-                };
 
-                let color = glyph
-                    .color_opt
-                    .unwrap_or(cosmic_text::Color::rgb(255, 255, 255));
+        // 3. Convert the raw cosmic-text buffer into a ShapedBuffer for the core pipeline
+        let mut shaped_glyphs = Vec::new();
+        let mut lines = Vec::new();
+        for run in self.buffer.layout_runs() {
+            // Correctly calculate the alignment offset for the test tool's shaped buffer
+            let layout_width = self.buffer.size().0.unwrap_or(run.line_w);
+            let alignment_offset = match options.align {
+                Some(crate::types::HorizontalAlignment::Center) => (layout_width - run.line_w) / 2.0,
+                Some(crate::types::HorizontalAlignment::Right) => layout_width - run.line_w,
+                _ => 0.0,
+            };
 
-                instances.push(GlyphInstance {
-                    pos: [
-                        (physical_glyph.x + image.placement.left) as f32,
-                        (run.line_y as i32 + physical_glyph.y - image.placement.top) as f32,
-                    ],
-                    size: [image.placement.width as f32, image.placement.height as f32],
-                    uv_pos: uv.uv_pos,
-                    uv_size: uv.uv_size,
-                    color: [
-                        color.r() as f32 / 255.0,
-                        color.g() as f32 / 255.0,
-                        color.b() as f32 / 255.0,
-                        color.a() as f32 / 255.0,
-                    ],
-                    bg_color: [0.0, 0.0, 0.0, 0.0],
+            lines.push(crate::types::line::LineInfo {
+                x: alignment_offset,
+                y: run.line_y,
+                width: run.line_w,
+            });
+
+
+
+
+
+            for glyph in run.glyphs {
+                let physical = glyph.physical((0.0, 0.0), 1.0);
+                shaped_glyphs.push(crate::types::shaped_glyph::ShapedGlyph {
+                    key: physical.cache_key,
+                    x: glyph.x,
+                    y: run.line_y + glyph.y,
+                    width: glyph.w,
+                    height: 0.0,
                 });
             }
         }
+        let shaped_buffer = crate::primitives::shaped_buffer::ShapedBuffer::new(
+            shaped_glyphs, 
+            lines, 
+            self.config.width as f32, 
+            self.config.height as f32
+        );
+
+        // 4. Generate instances using the CORE pipeline
+        // This automatically handles our "Safe & Tight" backgrounds!
+        let instances: Vec<crate::types::glyph::GlyphInstance> = if let Some(pipeline) = &self.pipeline {
+            pipeline.generate_instances(
+                &shaped_buffer,
+                &self.atlas,
+                [padding.left, v_offset],
+                &options,
+            )
+        } else {
+            Vec::new()
+        };
 
         if instances.is_empty() {
+
+
             // Nothing to render, but we still want to clear the screen
             let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
             {
@@ -326,9 +470,12 @@ impl AppState {
                 ..Default::default()
             });
 
-            render_pass.set_pipeline(self.pipeline.pipeline());
-            render_pass.set_bind_group(0, self.pipeline.atlas_bind_group(), &[]);
-            render_pass.set_bind_group(1, self.pipeline.uniform_bind_group(), &[]);
+            if let Some(pipeline) = &self.pipeline {
+                render_pass.set_pipeline(pipeline.pipeline());
+                render_pass.set_bind_group(0, pipeline.atlas_bind_group(), &[]);
+                render_pass.set_bind_group(1, pipeline.uniform_bind_group(), &[]);
+            }
+
             render_pass.set_vertex_buffer(0, instance_buffer.slice(..));
             render_pass.draw(0..4, 0..instances.len() as u32);
         }
@@ -346,11 +493,12 @@ impl ApplicationHandler for App {
                 .unwrap(),
         );
         // We need to take the callback here and pass it to AppState
-        // Since we can't easily move Box<dyn FnMut> into an async block multiple times,
-        // we assume resumed is called only once.
         let callback = std::mem::replace(&mut self.callback, Box::new(|_, _| {}));
-        self.state = Some(pollster::block_on(AppState::new(window, callback)));
+        let renderer_callback = self.renderer_callback.take();
+        let zentype_callback = self.zentype_callback.take();
+        self.state = Some(pollster::block_on(AppState::new(window, callback, renderer_callback, zentype_callback)));
     }
+
 
     fn window_event(
         &mut self,

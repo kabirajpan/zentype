@@ -3,7 +3,7 @@
 //! The simplest possible way to render text in the current version.
 //! Run with: `cargo run --example hello`
 
-use cosmic_text::{Attrs, Shaping};
+use cosmic_text::Shaping;
 use zentype::prelude::*;
 use zentype::testing::VisualTester;
 
@@ -11,10 +11,17 @@ fn main() {
     // VisualTester opens the window and gives us the drawing tools
     VisualTester::run(|font_system, buffer| {
         // 1. Set the text
-        let text = "Hello Zentype!";
+        let text = "Hello I am Kabiraj Pan this current setup match your Normal Behavior standard, or would you like me to";
 
         // 2. Set the options (minimal)
-        let options = TextOptions::new().font_size(24.0).color(Color::WHITE);
+        let options = TextOptions::new()
+            .font_family("monospace")
+            .font_size(20.0)
+            .align(HorizontalAlignment::Center)
+            .valign(VerticalAlignment::Bottom)
+            .color(Color::WHITE)
+            .font_weight(FontWeight::Bold)
+            .bg(Color::GREEN);
 
         // 3. Apply options to the buffer
         options.apply(font_system, buffer);

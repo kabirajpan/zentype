@@ -83,81 +83,85 @@ Define the swappable interfaces.
 
 ---
 
-## 🟣 Phase 4 — Default Implementations
+## 🟢 Phase 4 — Default Implementations (DONE)
 
 Implement Zentype's built-in defaults for every trait.
 
-- [ ] `CosmicFontProvider` implements `FontProvider`
-  - [ ] wraps `cosmic-text` `FontSystem`
-  - [ ] supports font loading from bytes
-  - [ ] supports font loading from file path
-- [ ] `SwashRasterizer` implements `Rasterizer`
-  - [ ] wraps `swash` `ScaleContext`
-  - [ ] outputs alpha mask for text glyphs
-  - [ ] outputs RGBA for color emoji
-- [ ] `ZentypeAtlas` implements `Atlas`
-  - [ ] uses `etagere` for allocation
-  - [ ] bucketed by glyph size for efficiency
-  - [ ] auto-grows texture when full
-  - [ ] dirty region tracking for partial GPU uploads
+- [x] `CosmicFontProvider` implements `FontProvider`
+  - [x] wraps `cosmic-text` `FontSystem`
+  - [x] supports font loading from bytes
+  - [x] supports font loading from file path
+- [x] `SwashRasterizer` implements `Rasterizer`
+  - [x] wraps `swash` `ScaleContext`
+  - [x] outputs alpha mask for text glyphs
+  - [x] outputs RGBA for color emoji
+- [x] `ZentypeAtlas` implements `Atlas`
+  - [x] uses `etagere` for allocation
+  - [x] bucketed by glyph size for efficiency
+  - [x] auto-grows texture when full
+  - [x] dirty region tracking for partial GPU uploads
+
 
 ---
 
-## ⚪ Phase 5 — Raw Primitives (Level 3)
+## 🟢 Phase 5 — Raw Primitives (Level 3) (DONE)
 
 Build the lowest-level public API.
 
-- [ ] `ShapedBuffer`
-  - [ ] `ShapedBuffer::new(font_system, text, options)`
-  - [ ] `fn glyphs(&self) -> &[ShapedGlyph]`
-  - [ ] `fn size(&self) -> (f32, f32)`
-- [ ] `GlyphAtlas` (public wrapper around `src/gpu/atlas.rs`)
-  - [ ] `GlyphAtlas::new(&device)`
-  - [ ] `fn get_or_insert(...) -> AtlasEntry`
-  - [ ] `fn texture(&self) -> &wgpu::Texture`
-  - [ ] `fn flush(&mut self, queue)`
-- [ ] `ZentypePipeline` (public wrapper around `src/gpu/pipeline.rs`)
-  - [ ] `ZentypePipeline::new(&device, &config)`
-  - [ ] `fn render_buffer(render_pass, font_system, swash_cache, atlas, buffer, options)`
-  - [ ] `fn set_resolution(&mut self, width, height)`
+- [x] `ShapedBuffer`
+  - [x] `ShapedBuffer::new(font_system, text, options)`
+  - [x] `fn glyphs(&self) -> &[ShapedGlyph]`
+  - [x] `fn size(&self) -> (f32, f32)`
+- [x] `GlyphAtlas` (public wrapper around `src/gpu/atlas.rs`)
+  - [x] `GlyphAtlas::new(&device)`
+  - [x] `fn get_or_insert(...) -> AtlasEntry`
+  - [x] `fn texture(&self) -> &wgpu::Texture`
+  - [x] `fn flush(&mut self, queue)`
+- [x] `ZentypePipeline` (public wrapper around `src/gpu/pipeline.rs`)
+  - [x] `ZentypePipeline::new(&device, &config)`
+  - [x] `fn render_buffer(render_pass, font_system, swash_cache, atlas, buffer, options)`
+  - [x] `fn set_resolution(&mut self, width, height)`
+
 
 ---
 
-## 🔶 Phase 6 — TextRenderer (Level 2)
+## 🟢 Phase 6 — TextRenderer (Level 2) (DONE)
 
 Build the semi-managed API on top of Level 3.
 
-- [ ] `TextRenderer::from_device(&device, &queue, &config)`
-- [ ] `TextRenderer::builder()` — returns `TextRendererBuilder`
-- [ ] `TextRendererBuilder`
-  - [ ] `.font_provider(impl FontProvider)`
-  - [ ] `.rasterizer(impl Rasterizer)`
-  - [ ] `.atlas(impl Atlas)`
-  - [ ] `.build(&device, &queue, &config) -> TextRenderer`
-- [ ] `fn draw(&mut self, text: &str, options: TextOptions)`
-- [ ] `fn draw_buffer(&mut self, buffer: &Buffer, options: TextOptions)`
-- [ ] `fn render(&mut self, render_pass: &mut wgpu::RenderPass)`
-- [ ] `fn atlas(&self) -> &dyn Atlas`
-- [ ] `fn atlas_mut(&mut self) -> &mut dyn Atlas`
-- [ ] `fn font_provider(&self) -> &dyn FontProvider`
-- [ ] `fn set_resolution(&mut self, width: u32, height: u32)`
+- [x] `TextRenderer::from_device(&device, &queue, &config)`
+- [x] `TextRenderer::builder()` — returns `TextRendererBuilder`
+- [x] `TextRendererBuilder`
+  - [x] `.font_provider(impl FontProvider)`
+  - [x] `.rasterizer(impl Rasterizer)`
+  - [x] `.atlas(impl Atlas)`
+  - [x] `.build(&device, &queue, &config) -> TextRenderer`
+- [x] `fn draw(&mut self, text: &str, options: TextOptions)`
+- [x] `fn draw_buffer(&mut self, buffer: &Buffer, options: TextOptions)`
+- [x] `fn render(&mut self, render_pass: &mut wgpu::RenderPass)`
+- [x] `fn atlas(&self) -> &dyn Atlas`
+- [x] `fn atlas_mut(&mut self) -> &mut dyn Atlas`
+- [x] `fn font_provider(&self) -> &dyn FontProvider`
+- [x] `fn set_resolution(&mut self, width: u32, height: u32)`
+
 
 ---
 
-## 🔷 Phase 7 — Zentype (Level 1)
+## 🟢 Phase 7 — Zentype (Level 1) (DONE)
 
 Build the fully managed API on top of Level 2.
 
-- [ ] `Zentype::new(&window) -> Self` (async)
-- [ ] `fn draw(&mut self, text: &str, options: TextOptions)`
-- [ ] `fn draw_buffer(&mut self, buffer: &Buffer, options: TextOptions)`
-- [ ] `fn begin_frame(&mut self)`
-- [ ] `fn render(&mut self)`
-- [ ] `fn end_frame(&mut self)`
-- [ ] `fn renderer(&self) -> &TextRenderer` (escape hatch)
-- [ ] `fn renderer_mut(&mut self) -> &mut TextRenderer` (escape hatch)
-- [ ] `fn set_resolution(&mut self, width: u32, height: u32)`
-- [ ] `fn set_clear_color(&mut self, color: Color)`
+- [x] `Zentype::new(&window) -> Self` (async)
+- [x] `fn draw(&mut self, text: &str, options: TextOptions)`
+- [x] `fn draw_buffer(&mut self, buffer: &Buffer, options: TextOptions)`
+- [x] `fn begin_frame(&mut self)`
+- [x] `fn render(&mut self)`
+- [x] `fn end_frame(&mut self)`
+- [x] `fn renderer(&self) -> &TextRenderer` (escape hatch)
+- [x] `fn renderer_mut(&mut self) -> &mut TextRenderer` (escape hatch)
+- [x] `fn set_resolution(&mut self, width: u32, height: u32)`
+- [x] `fn set_clear_color(&mut self, color: Color)`
+
 
 ---
 

@@ -60,11 +60,18 @@ Complete list of every feature Zentype can have, organized by category with prio
 - [x] 🔴 Per-text background color
 - [x] 🔴 Full-width line highlight (editor style)
 - [x] 🔴 Background padding control
-- [ ] 🔴 Multi-line background spanning
-- [ ] 🔴 Highlight ranges (selection highlight)
+- [x] 🔴 Multi-line background spanning (Gap-Free)
+- [x] 🔴 Highlight ranges (Optical Gold Standard 1.1/1.4)
 - [ ] 🔴 Custom highlight colors per range
 - [ ] 🟡 Rounded background corners
 - [ ] 🟡 Background opacity
+
+### 2026-04-20
+
+- ✅ Background Highlights — finalized 1.1/1.4 optical standard with gap-free multi-line support.
+- ✅ Padding Control — added support for symmetrical padding in background highlights.
+- ✅ Smart Metrics — integrated line-info in shaper for professional alignment.
+- ✅ Multi-Line Spanning — implemented seamless, gap-free background blocks across text wrap points.
 
 ---
 

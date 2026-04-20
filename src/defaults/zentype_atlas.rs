@@ -51,26 +51,21 @@ impl ZentypeAtlas {
 }
 
 impl Atlas for ZentypeAtlas {
-    fn get_or_insert(&mut self, key: GlyphKey, _data: &[u8]) -> AtlasEntry {
+    fn get_or_insert(&mut self, key: GlyphKey, glyph: &crate::types::glyph::RasterizedGlyph) -> AtlasEntry {
         // 1. Check if already cached
         if let Some(entry) = self.cached.get(&key) {
             return *entry;
         }
 
-        // 2. We need width/height but data is just bytes. 
-        // This default implementation assumes standard RGBA or Alpha-only 
-        // depending on the size of the data. 
-        // For Phase 4, we'll assume we know the glyph dimensions from the caller 
-        // or just allocate enough space. 
-        // Actually, the Rasterizer should probably provide the dimensions.
-        
-        // Placeholder implementation until we refine the get_or_insert call signature
-        // in Step 4/5. 
+        // Placeholder implementation for default engine
         AtlasEntry {
             uv_pos: [0.0, 0.0],
             uv_size: [0.0, 0.0],
+            pixel_size: [glyph.width as f32, glyph.height as f32],
+            pixel_offset: [glyph.left as f32, glyph.top as f32],
         }
     }
+
 
     fn texture(&self) -> &wgpu::Texture {
         &self.texture

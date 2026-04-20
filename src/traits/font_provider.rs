@@ -17,7 +17,11 @@ pub trait FontProvider: Send + Sync {
 
     /// Returns the metrics for a given set of options (e.g., line height).
     fn metrics(&self, options: &TextOptions) -> FontMetrics;
+
+    /// Sets the available layout space (e.g., for centering alignment).
+    fn set_layout_size(&mut self, width: f32, height: f32);
 }
+
 
 /// Basic vertical metrics for a font at a specific size.
 #[derive(Debug, Clone, Copy, PartialEq)]
