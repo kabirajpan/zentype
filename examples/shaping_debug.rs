@@ -5,7 +5,6 @@
 //! Run with: `cargo run --example shaping_debug`
 
 use zentype::prelude::*;
-use zentype::providers::CosmicFontProvider;
 use zentype::traits::FontProvider;
 
 fn main() {
@@ -22,7 +21,10 @@ fn main() {
         .color(Color::WHITE);
 
     println!("Shaping text: \"{}\"", text);
-    println!("Options: size={}, height={}", options.font_size, options.line_height);
+    println!(
+        "Options: size={}, height={}",
+        options.font_size, options.line_height
+    );
 
     // 3. Perform shaping
     let buffer = provider.shape(text, &options);
@@ -39,7 +41,10 @@ fn main() {
     if !glyphs.is_empty() {
         println!("\nFirst 3 Glyphs:");
         for (i, glyph) in glyphs.iter().take(3).enumerate() {
-            println!("  [{}] Key={:?}, x={:.2}, y={:.2}", i, glyph.key, glyph.x, glyph.y);
+            println!(
+                "  [{}] Key={:?}, x={:.2}, y={:.2}",
+                i, glyph.key, glyph.x, glyph.y
+            );
         }
     }
 
