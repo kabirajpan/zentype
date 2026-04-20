@@ -4,15 +4,15 @@ Full development plan for Zentype from current state to stable library release.
 
 ---
 
-## 🔴 Phase 0 — Housekeeping (Do First)
+## 🟢 Phase 0 — Housekeeping (DONE)
 
 These are blocking tasks before any real work begins.
 
-- [ ] Rename project from `text_engine` to `zentype` in `Cargo.toml`
-- [ ] Update `README.md` — remove all "Zenthra" references
-- [ ] Reserve `zentype` name on [crates.io](https://crates.io) with an empty publish
-- [ ] Set up `.gitignore` properly
-- [ ] Create initial git tag `v0.0.1-pre`
+- [x] Rename project from `text_engine` to `zentype` in `Cargo.toml`
+- [x] Update `README.md` — remove all "Zenthra" references
+- [x] Reserve `zentype` name on [crates.io](https://crates.io) with an empty publish
+- [x] Set up `.gitignore` properly
+- [x] Create initial git tag `v0.0.1-pre`
 
 ---
 
@@ -69,17 +69,17 @@ Build the shared types everything else depends on.
 
 Define the swappable interfaces.
 
-- [ ] Define `FontProvider` trait
-  - [ ] `fn shape(&mut self, text: &str, attrs: &Attrs) -> ShapedBuffer`
-  - [ ] `fn load_font(&mut self, data: &[u8])`
-- [ ] Define `Rasterizer` trait
-  - [ ] `fn rasterize(&mut self, glyph: &ShapedGlyph) -> RasterizedGlyph`
-- [ ] Define `Atlas` trait
-  - [ ] `fn get_or_insert(&mut self, key: GlyphKey, data: &[u8]) -> AtlasEntry`
-  - [ ] `fn texture(&self) -> &wgpu::Texture`
-  - [ ] `fn flush(&mut self, queue: &wgpu::Queue)`
-- [ ] All traits must be `Send + Sync`
-- [ ] Write trait documentation with usage examples
+- [x] Define `FontProvider` trait
+  - [x] `fn shape(&mut self, text: &str, attrs: &Attrs) -> ShapedBuffer`
+  - [x] `fn load_font(&mut self, data: &[u8])`
+- [x] Define `Rasterizer` trait
+  - [x] `fn rasterize(&mut self, glyph: &ShapedGlyph) -> RasterizedGlyph`
+- [x] Define `Atlas` trait
+  - [x] `fn get_or_insert(&mut self, key: GlyphKey, data: &[u8]) -> AtlasEntry`
+  - [x] `fn texture(&self) -> &wgpu::Texture`
+  - [x] `fn flush(&mut self, queue: &wgpu::Queue)`
+- [x] All traits must be `Send + Sync`
+- [x] Write trait documentation with usage examples
 
 ---
 
