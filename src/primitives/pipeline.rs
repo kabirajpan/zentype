@@ -51,9 +51,9 @@ impl ZentypePipeline {
             let bg_color = options.bg_color.unwrap();
 
             for line in buffer.lines() {
-                // Determine width based on full_width setting
                 let width = if options.full_width_bg {
-                    buffer.size().0 + padding.left + padding.right
+                    options.max_width.map(|w| w + padding.left + padding.right)
+                        .unwrap_or(line.width + padding.left + padding.right)
                 } else {
                     line.width + padding.left + padding.right
                 };
@@ -68,22 +68,22 @@ impl ZentypePipeline {
                 let baseline = pos[1] + line.y;
                 let font_size = options.font_size;
                 let lh = options.line_height;
-                
+
                 // We use the full line height to ensure consecutive lines touch (no gaps).
-                let box_height = font_size * lh; 
-                
+                let box_height = font_size * lh;
+
                 // Centering: split the extra line-height space above and below.
                 // Standard font box is ~1.0 total (0.8 up, 0.2 down).
                 // Extra space is (lh - 1.0).
                 let visual_ascent = font_size * (0.8 + (lh - 1.0) / 2.0);
-                
-                let final_y_top = baseline - visual_ascent - padding.top;
+
+                let final_y_top = baseline - visual_ascent;
                 let final_height = box_height + padding.top + padding.bottom;
 
-
                 instances.push(crate::types::glyph::GlyphInstance {
-                    // Shift x left by padding.left so the text is centered within the padding
-                    pos: [line_x - padding.left, final_y_top],
+                    // Background starts exactly at line_x, spanning the required width.
+                    // Previous version was subtracting padding.left from x, which was wrong.
+                    pos: [line_x, final_y_top],
                     size: [width, final_height],
 
                     uv_pos: [0.0, 0.0],
@@ -104,8 +104,8 @@ impl ZentypePipeline {
                 // 3. Subtract top offset from y because cosmic-text's top is positive UP from baseline.
                 instances.push(crate::types::glyph::GlyphInstance {
                     pos: [
-                        pos[0] + glyph.x + entry.pixel_offset[0],
-                        pos[1] + glyph.y - entry.pixel_offset[1],
+                        pos[0] + glyph.x + entry.pixel_offset[0] + options.padding.left,
+                        pos[1] + glyph.y - entry.pixel_offset[1] + options.padding.top,
                     ],
                     size: entry.pixel_size,
                     uv_pos: entry.uv_pos,

@@ -104,7 +104,12 @@ impl TextOptions {
         self
     }
 
-    pub fn padding(mut self, value: f32) -> Self {
+    pub fn padding(mut self, padding: Padding) -> Self {
+        self.padding = padding;
+        self
+    }
+
+    pub fn padding_all(mut self, value: f32) -> Self {
         self.padding = Padding::all(value);
         self
     }

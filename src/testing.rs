@@ -39,7 +39,7 @@ impl VisualTester {
     /// Level 2: Managed TextRenderer
     pub fn run_renderer<F>(callback: F)
     where
-        F: FnMut(&mut TextRenderer, &wgpu::Queue) + 'static,
+        F: FnMut(&mut TextRenderer, &wgpu::Queue, [f32; 2]) + 'static,
     {
         let event_loop = EventLoop::new().unwrap();
         let mut app = App {
@@ -54,7 +54,7 @@ impl VisualTester {
     /// Level 1: Managed Zentype entry point
     pub fn run_zentype<F>(callback: F)
     where
-        F: FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue) + 'static,
+        F: FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue, [f32; 2]) + 'static,
     {
         let event_loop = EventLoop::new().unwrap();
         let mut app = App {
@@ -72,8 +72,8 @@ impl VisualTester {
 struct App {
     state: Option<AppState>,
     callback: Box<dyn FnMut(&mut FontSystem, &mut Buffer)>,
-    renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue)>>,
-    zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue)>>,
+    renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue, [f32; 2])>>,
+    zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue, [f32; 2])>>,
 }
 
 
@@ -92,9 +92,11 @@ struct AppState {
     buffer: Buffer,
 
     renderer: Option<TextRenderer>,
-    renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue)>>,
+    renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue, [f32; 2])>>,
     zentype: Option<crate::managed::zentype::Zentype>,
-    zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue)>>,
+    zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue, [f32; 2])>>,
+
+    mouse_pos: [f32; 2],
 }
 
 
@@ -104,8 +106,8 @@ impl AppState {
     async fn new(
         window: Arc<Window>,
         mut callback: Box<dyn FnMut(&mut FontSystem, &mut Buffer)>,
-        renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue)>>,
-        zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue)>>,
+        renderer_callback: Option<Box<dyn FnMut(&mut TextRenderer, &wgpu::Queue, [f32; 2])>>,
+        zentype_callback: Option<Box<dyn FnMut(&mut crate::managed::zentype::Zentype, &wgpu::Queue, [f32; 2])>>,
     ) -> Self {
 
         let size = window.inner_size();
@@ -211,6 +213,7 @@ impl AppState {
             renderer_callback,
             zentype,
             zentype_callback,
+            mouse_pos: [0.0, 0.0],
         }
     }
 
@@ -257,7 +260,7 @@ impl AppState {
 
         if let (Some(zentype), Some(callback)) = (&mut self.zentype, &mut self.zentype_callback) {
             // --- LEVEL 1 MANAGED ZENTYPE PATH ---
-            callback(zentype, &self.queue);
+            callback(zentype, &self.queue, self.mouse_pos);
             
             {
                 let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -283,7 +286,7 @@ impl AppState {
         if let (Some(renderer), Some(callback)) = (&mut self.renderer, &mut self.renderer_callback) {
             // --- LEVEL 2 MANAGED RENDERER PATH ---
 
-            callback(renderer, &self.queue);
+            callback(renderer, &self.queue, self.mouse_pos);
             
             {
                 let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -390,11 +393,13 @@ impl AppState {
                 let physical = glyph.physical((0.0, 0.0), 1.0);
                 shaped_glyphs.push(crate::types::shaped_glyph::ShapedGlyph {
                     key: physical.cache_key,
+                    cluster: glyph.start,
                     x: glyph.x,
                     y: run.line_y + glyph.y,
                     width: glyph.w,
                     height: 0.0,
                 });
+
             }
         }
         let shaped_buffer = crate::primitives::shaped_buffer::ShapedBuffer::new(
@@ -517,6 +522,10 @@ impl ApplicationHandler for App {
                 }
                 WindowEvent::RedrawRequested => {
                     state.render();
+                    state.window.request_redraw();
+                }
+                WindowEvent::CursorMoved { position, .. } => {
+                    state.mouse_pos = [position.x as f32, position.y as f32];
                     state.window.request_redraw();
                 }
                 _ => {

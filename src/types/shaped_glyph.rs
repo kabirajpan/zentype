@@ -6,8 +6,11 @@ use crate::types::glyph::GlyphKey;
 pub struct ShapedGlyph {
     /// Unique identifier for the font and glyph index.
     pub key: GlyphKey,
+    /// Byte index of the character in the input string.
+    pub cluster: usize,
     /// X coordinate in logical pixels.
     pub x: f32,
+
     /// Y coordinate in logical pixels.
     pub y: f32,
     /// Width of the glyph (may include padding/advancement).

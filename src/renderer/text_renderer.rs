@@ -51,7 +51,6 @@ impl TextRenderer {
         }
     }
 
-
     /// Sets a custom font provider.
     pub fn set_font_provider(&mut self, provider: Box<dyn FontProvider>) {
         self.font_provider = provider;
@@ -64,21 +63,24 @@ impl TextRenderer {
 
     /// Prepares a string for rendering in the current frame at the specified position.
     /// This will shape the text and ensure all required glyphs are in the atlas.
-    pub fn draw(&mut self, queue: &wgpu::Queue, text: &str, pos: [f32; 2], options: &TextOptions) {
-        // 1. Ensure the shaper knows the screen width for alignment
-        self.font_provider.set_layout_size(self.screen_size[0], self.screen_size[1]);
+    /// Returns the ShapedBuffer which can be used for hit-testing and interactivity.
+    pub fn draw(&mut self, queue: &wgpu::Queue, text: &str, pos: [f32; 2], options: &TextOptions) -> ShapedBuffer {
+        // 1. Ensure the shaper knows the available width for alignment/wrapping
+        let layout_width = options.max_width.unwrap_or(self.screen_size[0] - pos[0]) - options.padding.left - options.padding.right;
+        let layout_height = self.screen_size[1] - pos[1] - options.padding.top - options.padding.bottom;
+
+        self.font_provider.set_layout_size(layout_width, layout_height);
         
-        // --- IMPROVEMENT: Handle wrapping ---
+        // --- Handle wrapping within the padded area ---
         let mut final_options = options.clone();
         if final_options.max_width.is_none() {
-            // Default to screen width if we want it centered or wrapped
-            final_options.max_width = Some(self.screen_size[0]);
+            // Default to the calculated layout width
+            final_options.max_width = Some(layout_width);
         }
         
         // 2. Shape text with the final bounding options
         let buffer = self.font_provider.shape(text, &final_options);
 
-        
         // 3. Ensure glyphs are in atlas
         for glyph in buffer.glyphs() {
             if self.atlas.get(&glyph.key).is_none() {
@@ -86,15 +88,37 @@ impl TextRenderer {
                 if let Some(rasterized) = self.rasterizer.rasterize(glyph) {
                     self.atlas.insert(queue, glyph.key, &rasterized);
                 }
-
             }
         }
 
         // 4. Generate instances with the provided offset
-        let mut new_instances = self.pipeline.generate_instances(&buffer, &self.atlas, pos, options);
+        let mut new_instances = self.pipeline.generate_instances(&buffer, &self.atlas, pos, &final_options);
         self.instances.append(&mut new_instances);
+
+        buffer
     }
 
+    /// Finds the character index at the given screen-space coordinates.
+    /// This handles the translation from screen space to text-local space, 
+    /// accounting for position and padding.
+    pub fn hit_test(&self, buffer: &ShapedBuffer, pos: [f32; 2], options: &TextOptions, mouse_pos: [f32; 2]) -> usize {
+        let padding = options.padding;
+        let x = mouse_pos[0] - pos[0] - padding.left; // Subtract X and Left Padding
+        let y = mouse_pos[1] - pos[1] - padding.top; // Subtract Y and Top Padding
+        
+        buffer.index_at(x, y)
+    }
+
+    /// Returns the screen-space position for a given character index.
+    pub fn position_at(&self, buffer: &ShapedBuffer, pos: [f32; 2], options: &TextOptions, index: usize) -> Option<[f32; 2]> {
+        let padding = options.padding;
+        buffer.position_at(index).map(|(lx, ly)| {
+            [
+                lx + pos[0] + padding.left,
+                ly + pos[1] + padding.top,
+            ]
+        })
+    }
 
     /// Submits the accumulated text instances to the provided RenderPass.
     pub fn render<'a>(&'a mut self, rpass: &mut wgpu::RenderPass<'a>) {

@@ -98,11 +98,13 @@ impl FontProvider for CosmicFontProvider {
                 let physical = glyph.physical((0.0, 0.0), 1.0);
                 shaped_glyphs.push(ShapedGlyph {
                     key: physical.cache_key,
+                    cluster: glyph.start,
                     x: glyph.x,
                     y: run.line_y + glyph.y,
                     width: glyph.w,
                     height: 0.0, // Precision height managed by TextRenderer via Atlas
                 });
+
             }
         }
 
