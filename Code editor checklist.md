@@ -17,6 +17,8 @@ Everything Zentype must handle to power a professional code editor.
 - [ ] Ligatures (`->` `!=` `=>` as single glyphs)
 - [ ] Letter spacing
 - [x] Line height
+- [x] Padding support
+- [x] Horizontal & Vertical alignment
 - [ ] Tab width (affects glyph positioning)
 
 
@@ -89,8 +91,8 @@ Everything Zentype must handle to power a professional code editor.
 
 ## ✅ Hit Testing
 
-- [ ] Click position → character index
-- [ ] Character index → pixel position
+- [x] Click position → character index
+- [x] Character index → pixel position
 - [ ] Line number from click
 - [ ] Word boundaries detection
 - [ ] Glyph bounding boxes

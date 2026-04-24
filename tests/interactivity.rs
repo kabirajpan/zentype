@@ -105,3 +105,69 @@ fn test_hit_testing_with_padding() {
     let index = buffer.index_at(local_x, local_y);
     assert_eq!(index, 0);
 }
+
+#[test]
+fn test_hit_testing_centered_alignment() {
+    let (dummy_key, _, _) = CacheKey::new(
+        cosmic_text::fontdb::ID::dummy(), 
+        0, 
+        16.0, 
+        (0.0, 0.0), 
+        Weight::NORMAL, 
+        cosmic_text::CacheKeyFlags::empty()
+    );
+
+    // Buffer is 100 wide, content is 30 wide.
+    // Centered: offset = (100 - 30) / 2 = 35. 
+    // Glyph 0 at local content X=0 -> Global content X=35.
+    let buffer = ShapedBuffer::new(
+        vec![
+            ShapedGlyph { key: dummy_key, cluster: 0, x: 0.0, y: 0.0, width: 10.0, height: 20.0 },
+            ShapedGlyph { key: dummy_key, cluster: 1, x: 10.0, y: 0.0, width: 10.0, height: 20.0 },
+            ShapedGlyph { key: dummy_key, cluster: 2, x: 20.0, y: 0.0, width: 10.0, height: 20.0 },
+        ],
+        vec![LineInfo { x: 35.0, y: 0.0, width: 30.0 }],
+        100.0,
+        100.0,
+    );
+
+    // Hit at local content X=40 (Over glyph 0)
+    let index = buffer.index_at(40.0, 5.0);
+    assert_eq!(index, 0);
+
+    // Hit at local content X=60 (Over glyph 2)
+    let index = buffer.index_at(60.0, 5.0);
+    assert_eq!(index, 2);
+}
+
+#[test]
+fn test_hit_testing_vertical_alignment() {
+    let (dummy_key, _, _) = CacheKey::new(
+        cosmic_text::fontdb::ID::dummy(), 
+        0, 
+        16.0, 
+        (0.0, 0.0), 
+        Weight::NORMAL, 
+        cosmic_text::CacheKeyFlags::empty()
+    );
+
+    // Buffer is 100 high, line is 20 high.
+    // Bottom-aligned: line.y = 100 - 20 = 80.
+    let buffer = ShapedBuffer::new(
+        vec![
+            ShapedGlyph { key: dummy_key, cluster: 0, x: 0.0, y: 80.0, width: 10.0, height: 20.0 },
+        ],
+        vec![LineInfo { x: 0.0, y: 80.0, width: 10.0 }],
+        100.0,
+        100.0,
+    );
+
+    // Hit at local content Y=90 (Inside the line at the bottom)
+    let index = buffer.index_at(5.0, 90.0);
+    assert_eq!(index, 0);
+
+    // Hit at local content Y=10 (Top of buffer, far from line)
+    // Should still return 0 (fallback to closest line)
+    let index = buffer.index_at(5.0, 10.0);
+    assert_eq!(index, 0);
+}

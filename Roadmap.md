@@ -139,9 +139,10 @@ Build the semi-managed API on top of Level 3.
 - [x] `fn draw(&mut self, text: &str, options: TextOptions)`
 - [x] `fn draw_buffer(&mut self, buffer: &Buffer, options: TextOptions)`
 - [x] `fn render(&mut self, render_pass: &mut wgpu::RenderPass)`
-- [x] `fn atlas(&self) -> &dyn Atlas`
-- [x] `fn atlas_mut(&mut self) -> &mut dyn Atlas`
-- [x] `fn font_provider(&self) -> &dyn FontProvider`
+- [x] `fn hit_test(&self, buffer: &ShapedBuffer, pos, options, mouse_pos) -> usize`
+- [x] `fn position_at(&self, buffer, pos, options, index) -> Option<[f32; 2]>`
+- [x] Horizontal & Vertical Alignment support
+- [x] Symmetrical Padding support
 - [x] `fn set_resolution(&mut self, width: u32, height: u32)`
 
 

@@ -20,6 +20,7 @@ pub struct TextOptions {
     pub full_width_bg: bool,
 
     pub max_width: Option<f32>,
+    pub max_height: Option<f32>,
     pub line_height: f32,
     pub wrap: TextWrap,
     /// Horizontal alignment. If None, per-line settings are preserved.
@@ -54,6 +55,7 @@ impl Default for TextOptions {
 
             full_width_bg: false,
             max_width: None,
+            max_height: None,
             line_height: 1.5,
             wrap: TextWrap::Word,
             align: None,
@@ -153,6 +155,12 @@ impl TextOptions {
 
     pub fn max_width(mut self, width: f32) -> Self {
         self.max_width = Some(width);
+        self
+    }
+
+    /// Sets the maximum height for word wrapping and vertical alignment.
+    pub fn max_height(mut self, height: f32) -> Self {
+        self.max_height = Some(height);
         self
     }
 

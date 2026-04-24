@@ -91,11 +91,33 @@ impl TextRenderer {
             }
         }
 
-        // 4. Generate instances with the provided offset
-        let mut new_instances = self.pipeline.generate_instances(&buffer, &self.atlas, pos, &final_options);
+        // 4. Calculate vertical alignment offset
+        let y_offset = self.calculate_valign_offset(&buffer, pos, &final_options);
+
+        // 5. Generate instances with the provided offset
+        let mut render_pos = pos;
+        render_pos[1] += y_offset;
+
+        let mut new_instances = self.pipeline.generate_instances(&buffer, &self.atlas, render_pos, &final_options);
         self.instances.append(&mut new_instances);
 
         buffer
+    }
+
+    fn calculate_valign_offset(&self, buffer: &ShapedBuffer, pos: [f32; 2], options: &TextOptions) -> f32 {
+        if let Some(valign) = options.valign {
+            let (_, content_height) = buffer.content_size();
+            let max_h = options.max_height.unwrap_or(self.screen_size[1] - pos[1]);
+            let available_height = max_h;
+            
+            match valign {
+                VerticalAlignment::Top => 0.0,
+                VerticalAlignment::Center => (available_height - content_height) / 2.0,
+                VerticalAlignment::Bottom => available_height - content_height,
+            }
+        } else {
+            0.0
+        }
     }
 
     /// Finds the character index at the given screen-space coordinates.
@@ -103,8 +125,10 @@ impl TextRenderer {
     /// accounting for position and padding.
     pub fn hit_test(&self, buffer: &ShapedBuffer, pos: [f32; 2], options: &TextOptions, mouse_pos: [f32; 2]) -> usize {
         let padding = options.padding;
-        let x = mouse_pos[0] - pos[0] - padding.left; // Subtract X and Left Padding
-        let y = mouse_pos[1] - pos[1] - padding.top; // Subtract Y and Top Padding
+        let y_offset = self.calculate_valign_offset(buffer, pos, options);
+        
+        let x = mouse_pos[0] - pos[0] - padding.left; 
+        let y = mouse_pos[1] - pos[1] - padding.top - y_offset; 
         
         buffer.index_at(x, y)
     }
@@ -112,10 +136,12 @@ impl TextRenderer {
     /// Returns the screen-space position for a given character index.
     pub fn position_at(&self, buffer: &ShapedBuffer, pos: [f32; 2], options: &TextOptions, index: usize) -> Option<[f32; 2]> {
         let padding = options.padding;
+        let y_offset = self.calculate_valign_offset(buffer, pos, options);
+        
         buffer.position_at(index).map(|(lx, ly)| {
             [
                 lx + pos[0] + padding.left,
-                ly + pos[1] + padding.top,
+                ly + pos[1] + padding.top + y_offset,
             ]
         })
     }

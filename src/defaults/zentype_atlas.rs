@@ -57,13 +57,58 @@ impl Atlas for ZentypeAtlas {
             return *entry;
         }
 
-        // Placeholder implementation for default engine
-        AtlasEntry {
-            uv_pos: [0.0, 0.0],
-            uv_size: [0.0, 0.0],
+        // 2. Allocate space in the atlas
+        let size = size2(glyph.width as i32, glyph.height as i32);
+        let mut allocation = self.allocator.allocate(size);
+
+        // 3. If allocation fails, clear and retry (naive LRU replacement policy for now)
+        if allocation.is_none() {
+            self.clear();
+            allocation = self.allocator.allocate(size);
+        }
+
+        // 4. If it still fails, just return an empty entry (too big for atlas)
+        let allocation = match allocation {
+            Some(a) => a,
+            None => return AtlasEntry {
+                uv_pos: [0.0, 0.0],
+                uv_size: [0.0, 0.0],
+                pixel_size: [glyph.width as f32, glyph.height as f32],
+                pixel_offset: [glyph.left as f32, glyph.top as f32],
+            },
+        };
+
+        // 5. Calculate UVs
+        let atlas_size = self._size as f32;
+        let uv_pos = [
+            allocation.rectangle.min.x as f32 / atlas_size,
+            allocation.rectangle.min.y as f32 / atlas_size,
+        ];
+        let uv_size = [
+            glyph.width as f32 / atlas_size,
+            glyph.height as f32 / atlas_size,
+        ];
+
+        let entry = AtlasEntry {
+            uv_pos,
+            uv_size,
             pixel_size: [glyph.width as f32, glyph.height as f32],
             pixel_offset: [glyph.left as f32, glyph.top as f32],
-        }
+        };
+
+        // 6. Queue the pixel data for GPU upload
+        self.pending_writes.push(PendingWrite {
+            x: allocation.rectangle.min.x as u32,
+            y: allocation.rectangle.min.y as u32,
+            width: glyph.width,
+            height: glyph.height,
+            data: glyph.data.clone(),
+        });
+
+        // 7. Update cache
+        self.cached.insert(key, entry);
+
+        entry
     }
 
 

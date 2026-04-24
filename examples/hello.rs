@@ -9,15 +9,16 @@ use zentype::testing::VisualTester;
 fn main() {
     // 1. Use the managed Zentype runner
     VisualTester::run_zentype(|zentype, queue, mouse_pos| {
-        let text = "Hello I am Kabiraj Pan. Try hovering over me to see hit-testing in action!";
+        let text = "Hello I am Kabiraj Pan. ";
         let pos = [100.0, 100.0];
 
         let options = TextOptions::new()
             .font_family("monospace")
             .font_size(24.0)
             .color(Color::WHITE)
-            .full_width(true)
             .bg(Color::hex("#1e1e1e"))
+            .align(HorizontalAlignment::Center)
+            .valign(VerticalAlignment::Top)
             .padding(Padding::all(10.0));
 
         // 2. Draw text and get the resulting buffer (the "layout brain")

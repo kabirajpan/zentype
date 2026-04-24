@@ -103,8 +103,8 @@ Complete list of every feature Zentype can have, organized by category with prio
 
 ## 7. 🎯 Hit Testing
 
-- [ ] 🔴 Click position → character index
-- [ ] 🔴 Character index → pixel position
+- [x] 🔴 Click position → character index
+- [x] 🔴 Character index → pixel position
 - [ ] 🔴 Line number from click
 - [ ] 🟡 Word boundaries detection
 - [ ] 🟡 Glyph bounding boxes
